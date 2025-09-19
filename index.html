@@ -1,82 +1,226 @@
 <!DOCTYPE html>
-<html lang="ja"><head>
-<meta charset="UTF-8" /><meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<html lang="ja">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
 <title>脱出ゲーム 正誤判定</title>
 <style>
-  :root{--panel:rgba(255,255,255,.06);--border:rgba(255,255,255,.12)}
-  *{box-sizing:border-box} html,body{height:100%;margin:0;color:#fff;
-  font-family:system-ui,-apple-system,"Segoe UI",Roboto,"Hiragino Kaku Gothic ProN","Yu Gothic",sans-serif}
-  body{background:
-   radial-gradient(1100px 550px at 10% -10%, #60a5fa22, transparent 60%),
-   radial-gradient(900px 450px at 110% 0%, #a78bfa22, transparent 60%),
-   radial-gradient(600px 600px at 50% 120%, #22d3ee20, transparent 60%),
-   linear-gradient(#0b1220,#0e172a 40%,#111827);overflow:hidden}
+  :root{ --panel:rgba(255,255,255,.06); --border:rgba(255,255,255,.12);
+         --ok:#34d399; --ng:#f87171; }
+  *{box-sizing:border-box}
+  html,body{height:100%;margin:0;color:#fff;
+    font-family:system-ui,-apple-system,"Segoe UI",Roboto,"Hiragino Kaku Gothic ProN","Yu Gothic",sans-serif}
+  /* 幻想的な背景＆きらめき */
+  body{
+    background:
+      radial-gradient(1100px 550px at 10% -10%, #60a5fa22, transparent 60%),
+      radial-gradient(900px 450px at 110% 0%, #a78bfa22, transparent 60%),
+      radial-gradient(600px 600px at 50% 120%, #22d3ee20, transparent 60%),
+      linear-gradient(#0b1220,#0e172a 40%,#111827);
+    overflow:hidden;
+  }
+  .twinkle,.twinkle::after{
+    position:fixed; inset:0; pointer-events:none; content:"";
+    background:
+      radial-gradient(2px 2px at 20% 30%, #fff8, transparent 60%),
+      radial-gradient(1.5px 1.5px at 60% 20%, #fff6, transparent 60%),
+      radial-gradient(1.8px 1.8px at 80% 70%, #fff7, transparent 60%),
+      radial-gradient(1.4px 1.4px at 35% 80%, #fff5, transparent 60%),
+      radial-gradient(1.6px 1.6px at 75% 45%, #fff7, transparent 60%);
+    animation: shimmer 6s ease-in-out infinite; z-index:1;
+  }
+  .twinkle::after{ animation-delay:3s; opacity:.7 }
+  @keyframes shimmer { 0%,100%{opacity:.35} 50%{opacity:.8} }
+
+  /* UI */
   .grid{height:100%;display:grid;place-items:center;padding:16px;position:relative;z-index:2}
-  .card{width:min(720px,92vw);background:var(--panel);border:1px solid var(--border);
-    border-radius:20px;padding:20px;backdrop-filter:blur(6px)}
-  h1{margin:0 0 12px;font-size:clamp(20px,3vw,28px)}
-  .row{display:grid;grid-template-columns:1fr auto;gap:10px}
-  input{width:100%;padding:14px 16px;border-radius:12px;border:1px solid var(--border);
-    background:#0b1220cc;color:#fff;font-size:18px;outline:none}
-  button{border:none;border-radius:12px;padding:12px 16px;font-weight:700;cursor:pointer;
-    background:#10b981;color:#fff;font-size:16px}
-  .msg{margin:14px 2px 0;font-size:18px;font-weight:700}
-  .ok{color:#34d399}.ng{color:#f87171}.small{font-size:12px;opacity:.85}
-  .confetti{position:fixed;inset:0;pointer-events:none;z-index:6}
-  .stage{position:fixed;inset:0;pointer-events:none;z-index:5}
-  .fairy{position:fixed;top:50%;right:8%;transform:translate(0,-50%);
-    width:min(200px,30vw);filter:drop-shadow(0 0 10px #ffffff90)}
-  .flying{left:50%!important;right:auto!important;animation:fly 7s linear infinite}
-  @keyframes fly{0%{transform:translate(-50%,-50%) rotate(0)}25%{transform:translate(calc(-50% + 32vw),calc(-50% - 16vh)) rotate(16deg)}
-   50%{transform:translate(calc(-50% + 6vw),calc(-50% + 22vh)) rotate(-12deg)}
-   75%{transform:translate(calc(-50% - 28vw),calc(-50% - 12vh)) rotate(10deg)}
-   100%{transform:translate(-50%,-50%) rotate(0)}}
-</style></head>
+  .card{
+    width:min(720px,92vw); background:var(--panel); border:1px solid var(--border);
+    border-radius:20px; padding:20px; backdrop-filter: blur(6px);
+  }
+  h1{margin:0 0 12px; font-size:clamp(20px,3vw,28px)}
+  .row{display:grid; grid-template-columns:1fr auto; gap:10px}
+  input{
+    width:100%; padding:14px 16px; border-radius:12px; border:1px solid var(--border);
+    background:#0b1220cc; color:#fff; outline:none; font-size:18px;
+  }
+  button{
+    border:none; border-radius:12px; padding:12px 16px; font-weight:700; cursor:pointer;
+    background:#10b981; color:#fff; font-size:16px;
+  }
+  .msg{margin:14px 2px 0; font-size:18px; font-weight:700}
+  .ok{color:var(--ok)} .ng{color:var(--ng)}
+  .small{font-size:12px; opacity:.85}
+
+  /* エフェクト */
+  .confetti{position:fixed; inset:0; pointer-events:none; z-index:6}
+
+  /* 妖精 */
+  .stage{position:fixed; inset:0; pointer-events:none; z-index:5}
+  .fairy{
+    position:fixed; top:50%; right:8%; transform:translate(0,-50%); /* 初期＝右中央で静止 */
+    width:min(200px,30vw); filter:drop-shadow(0 0 10px #ffffff90);
+  }
+  .flying{ left:50% !important; right:auto !important; animation: fly 7s linear infinite }
+  @keyframes fly{
+    0%{ transform: translate(-50%, -50%) rotate(0deg) }
+    25%{ transform: translate(calc(-50% + 32vw), calc(-50% - 16vh)) rotate(16deg) }
+    50%{ transform: translate(calc(-50% + 6vw),  calc(-50% + 22vh)) rotate(-12deg) }
+    75%{ transform: translate(calc(-50% - 28vw), calc(-50% - 12vh)) rotate(10deg) }
+    100%{ transform: translate(-50%, -50%) rotate(0deg) }
+  }
+</style>
+</head>
 <body>
-<canvas id="confetti" class="confetti"></canvas>
-<div class="stage" aria-hidden="true">
-  <img id="fairy" class="fairy" src="fairy_idle.png" alt="fairy">
-</div>
-<div class="grid"><div class="card">
-  <h1>脱出ゲーム 正誤判定</h1>
-  <div class="row">
-    <input id="answer" type="text" placeholder="キーワードを入力…">
-    <button id="judgeBtn">判定</button>
+  <div class="twinkle"></div>
+
+  <!-- 紙吹雪 -->
+  <canvas id="confetti" class="confetti"></canvas>
+
+  <!-- 妖精 -->
+  <div class="stage" aria-hidden="true">
+    <!-- 初期画像は .png を試し、失敗なら .png.png にフォールバック -->
+    <img id="fairy" class="fairy"
+         src="fairy_idle.png"
+         onerror="this.onerror=null; this.src='fairy_idle.png.png';"
+         alt="fairy">
   </div>
-  <div id="result" class="msg" aria-live="polite"></div>
-</div></div>
-<audio id="okAudio" preload="auto"></audio><audio id="ngAudio" preload="auto"></audio>
+
+  <!-- UI -->
+  <div class="grid">
+    <div class="card">
+      <h1>脱出ゲーム 正誤判定</h1>
+      <div class="row">
+        <input id="answer" type="text" placeholder="キーワードを入力…（例：マクロ）"/>
+        <button id="judgeBtn">判定</button>
+      </div>
+      <div id="result" class="msg" aria-live="polite"></div>
+    </div>
+  </div>
+
+  <!-- 音声：日本語ファイル名（m4a推奨） -->
+  <audio id="okAudio" preload="auto">
+    <source src="正解.m4a" type="audio/mp4"/>
+    <!-- 予備（置いた場合のみ有効） -->
+    <source src="正解.mp3" type="audio/mpeg"/>
+  </audio>
+  <audio id="ngAudio" preload="auto">
+    <source src="不正解.m4a" type="audio/mp4"/>
+    <source src="不正解.mp3" type="audio/mpeg"/>
+  </audio>
+
 <script>
-const MACRO_KEYWORDS=["マクロ"],AUTO_RESET_MS=10000;
-const $=id=>document.getElementById(id);
-const inputEl=$("answer"),resultEl=$("result"),fairy=$("fairy"),
-      okAudio=$("okAudio"),ngAudio=$("ngAudio"),
-      confetti=$("confetti"),ctx=confetti.getContext("2d");
-["fairy_idle.png","fairy_smile.png","fairy_angry.png"].forEach(s=>{const i=new Image();i.src=s;});
-const normalize=s=>s.trim().toLowerCase().replace(/\u3000/g," ")
- .replace(/[Ａ-Ｚａ-ｚ０-９]/g,ch=>String.fromCharCode(ch.charCodeAt(0)-0xFEE0));
-const resize=()=>{confetti.width=innerWidth;confetti.height=innerHeight};addEventListener("resize",resize);resize();
-function confettiGo(){const ps=Array.from({length:150},()=>({x:Math.random()*confetti.width,y:-10,w:5,h:10,
-  color:`hsl(${Math.random()*360},100%,70%)`,v:2+Math.random()*4,r:Math.random()*360,rv:-3+Math.random()*6}));
-  const t=()=>{ctx.clearRect(0,0,confetti.width,confetti.height);ps.forEach(p=>{ctx.save();ctx.translate(p.x,p.y);
-   ctx.rotate(p.r*Math.PI/180);ctx.fillStyle=p.color;ctx.fillRect(-p.w/2,-p.h/2,p.w,p.h);ctx.restore();p.y+=p.v;p.r+=p.rv});
-   if(ps.some(p=>p.y<confetti.height))requestAnimationFrame(t)};t()}
-function setIdle(){fairy.classList.remove("flying");fairy.src="fairy_idle.png";
-  fairy.style.left="auto";fairy.style.right="8%";fairy.style.top="50%";fairy.style.transform="translate(0,-50%)"}
-function setSmile(){fairy.src="fairy_smile.png";fairy.classList.add("flying");
-  fairy.style.left="50%";fairy.style.right="auto";fairy.style.top="50%"}
-function setAngry(){fairy.classList.remove("flying");fairy.src="fairy_angry.png";
-  fairy.style.left="auto";fairy.style.right="8%";fairy.style.top="50%";fairy.style.transform="translate(0,-50%)"}
-let timer=null;function judge(){clearTimeout(timer);
-  const ok=MACRO_KEYWORDS.map(k=>normalize(k)).includes(normalize(inputEl.value));
-  if(ok){resultEl.innerHTML="大正解！みんなをもとの大きさに戻してあげる<br><span class='small'>※これで脱出ゲームは終了です。出口からおかえりください。</span>";
-    resultEl.className="msg ok";setSmile();okAudio.play?.();confettiGo();}
-  else{resultEl.innerHTML="残念。不正解。また挑戦してね。ばいばい。<br><span class='small'>※もう一度謎解きをしてみてください。ギブアップするときには出口から出てかまいません。</span>";
-    resultEl.className="msg ng";setAngry();ngAudio.play?.();}
-  timer=setTimeout(resetAll,AUTO_RESET_MS)}
-function resetAll(){clearTimeout(timer);inputEl.value="";resultEl.textContent="";resultEl.className="msg";
-  setIdle();ctx.clearRect(0,0,confetti.width,confetti.height);inputEl.focus()}
-$("judgeBtn").addEventListener("click",judge);inputEl.addEventListener("keydown",e=>{if(e.key==="Enter")judge()});
-setIdle();inputEl.focus();
+  /* ===== 設定 ===== */
+  const MACRO_KEYWORDS = ["マクロ"];   // 正解ワード
+  const AUTO_RESET_MS  = 10000;        // 10秒で自動リセット
+
+  /* ===== 要素 ===== */
+  const $ = s => document.querySelector(s);
+  const inputEl  = $("#answer");
+  const resultEl = $("#result");
+  const fairy    = $("#fairy");
+  const okAudio  = $("#okAudio");
+  const ngAudio  = $("#ngAudio");
+  const confetti = $("#confetti");
+  const ctx      = confetti.getContext("2d");
+
+  /* ===== 画像の事前読み込み（.png / .png.png の両対応） ===== */
+  ["fairy_idle","fairy_smile","fairy_angry"].forEach(base=>{
+    [base+".png", base+".png.png"].forEach(src=>{ const i=new Image(); i.src=src; });
+  });
+
+  /* ===== ユーティリティ ===== */
+  const normalize = s => s.trim().toLowerCase()
+    .replace(/\u3000/g," ")
+    .replace(/[Ａ-Ｚａ-ｚ０-９]/g, ch => String.fromCharCode(ch.charCodeAt(0)-0xFEE0));
+
+  const resize = ()=>{ confetti.width = innerWidth; confetti.height = innerHeight; };
+  addEventListener("resize", resize); resize();
+
+  function launchConfetti(){
+    const parts = Array.from({length:150},()=>({
+      x: Math.random()*confetti.width, y: -10, w: 5, h: 10,
+      color: `hsl(${Math.random()*360},100%,70%)`,
+      speed: 2+Math.random()*4, rot: Math.random()*360, rv: -3+Math.random()*6
+    }));
+    const tick = () => {
+      ctx.clearRect(0,0,confetti.width,confetti.height);
+      parts.forEach(p=>{
+        ctx.save(); ctx.translate(p.x,p.y); ctx.rotate(p.rot*Math.PI/180);
+        ctx.fillStyle=p.color; ctx.fillRect(-p.w/2,-p.h/2,p.w,p.h);
+        ctx.restore(); p.y+=p.speed; p.rot+=p.rv;
+      });
+      if (parts.some(p=>p.y<confetti.height)) requestAnimationFrame(tick);
+    };
+    tick();
+  }
+
+  // 画像の候補を順番に試す（.png → .png.png）
+  function trySet(el, list){
+    let i = 0;
+    const next = () => {
+      el.onerror = () => { i++; if (i < list.length) next(); };
+      el.src = list[i];
+    };
+    next();
+  }
+
+  /* ===== 表情＆動き ===== */
+  function setFairyIdle(){
+    fairy.classList.remove("flying");
+    trySet(fairy, ["fairy_idle.png", "fairy_idle.png.png"]);
+    fairy.style.left="auto"; fairy.style.right="8%";
+    fairy.style.top="50%";  fairy.style.transform="translate(0,-50%)";
+  }
+  function setFairySmileFly(){
+    trySet(fairy, ["fairy_smile.png", "fairy_smile.png.png"]);
+    fairy.classList.add("flying");
+    fairy.style.left="50%"; fairy.style.right="auto"; fairy.style.top="50%";
+  }
+  function setFairyAngryStay(){
+    fairy.classList.remove("flying");
+    trySet(fairy, ["fairy_angry.png", "fairy_angry.png.png"]);
+    fairy.style.left="auto"; fairy.style.right="8%";
+    fairy.style.top="50%"; fairy.style.transform="translate(0,-50%)";
+  }
+
+  /* ===== 判定＆自動リセット ===== */
+  let resetTimer = null;
+  function judge(){
+    clearTimeout(resetTimer);
+    const ok = MACRO_KEYWORDS.map(k=>normalize(k)).includes(normalize(inputEl.value));
+
+    if (ok){
+      resultEl.innerHTML = "大正解！みんなをもとの大きさに戻してあげる<br><span class='small'>※これで脱出ゲームは終了です。出口からおかえりください。</span>";
+      resultEl.className = "msg ok";
+      setFairySmileFly();
+      okAudio.currentTime = 0; okAudio.play().catch(()=>{});
+      launchConfetti();
+    } else {
+      resultEl.innerHTML = "残念。不正解。また挑戦してね。ばいばい。<br><span class='small'>※もう一度謎解きをしてみてください。ギブアップするときには出口から出てかまいません。</span>";
+      resultEl.className = "msg ng";
+      setFairyAngryStay();
+      ngAudio.currentTime = 0; ngAudio.play().catch(()=>{});
+    }
+    resetTimer = setTimeout(resetAll, AUTO_RESET_MS);
+  }
+
+  function resetAll(){
+    clearTimeout(resetTimer);
+    inputEl.value = "";
+    resultEl.textContent = "";
+    resultEl.className = "msg";
+    setFairyIdle();
+    ctx.clearRect(0,0,confetti.width,confetti.height);
+    inputEl.focus();
+  }
+
+  // イベント
+  document.getElementById("judgeBtn").addEventListener("click", judge);
+  inputEl.addEventListener("keydown", e => { if (e.key === "Enter") judge(); });
+
+  // 初期化
+  setFairyIdle(); inputEl.focus();
 </script>
-</body></html>
+</body>
+</html>
